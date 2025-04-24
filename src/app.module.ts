@@ -6,6 +6,7 @@ import { CardsModule } from './account/cards/cards.module';
 import { DepositModule } from './wallet/deposit/deposit.module';
 import { WithdrawModule } from './wallet/withdraw/withdraw.module';
 import { BuyModule } from './trade/buy/buy.module';
+import { SellModule } from './trade/sell/sell.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { BuyModule } from './trade/buy/buy.module';
     DepositModule,
     WithdrawModule,
     BuyModule,
+    SellModule,
   ],
   controllers: [],
   providers: [],

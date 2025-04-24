@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 export class GoldPriceService {
   async getCurrentPrice() {
     return {
-      pricePerGram: 2_500_000,
+      pricePerGram: 6_540_824, // ۶,۵۴۰,۸۲۴
       expiresAt: new Date(Date.now() + 30_000),
     };
   }
