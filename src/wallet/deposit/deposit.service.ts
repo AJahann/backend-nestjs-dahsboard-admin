@@ -34,20 +34,6 @@ export class DepositService {
         select: { cashBalance: true },
       });
 
-      // await tx.transaction.create({
-      //   data: {
-      //     amount,
-      //     fee: 0,
-      //     type: 'DEPOSIT',
-      //     status: 'COMPLETED',
-      //     userId,
-      //     metadata: {
-      //       cardId,
-      //       gatewayResponse: paymentResult
-      //     }
-      //   }
-      // });
-
       await tx.action.create({
         data: {
           type: ActionType.PAYMENT,
