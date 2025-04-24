@@ -11,6 +11,7 @@ export class UsersService {
       data: {
         phone: createUserDto.phone,
         password: createUserDto.password,
+        name: createUserDto.name,
         wallet: {
           create: {
             goldAmount: 0,
