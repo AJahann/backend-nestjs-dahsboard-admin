@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ActionType {
+  PAYMENT
+  WITHDRAW
+  TRADE
+  ORDER
+}
+
+model User {
+  id          String    @id @default(uuid())
+  phone       String    @unique
+  password    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  wallet      Wallet?
+  cards       Card[]
+  basket      Product[] @relation("BasketItems")
+  actions     Action[]
+}
+
+model Wallet {
+  id          String  @id @default(uuid())
+  goldAmount  Float   @default(0.0)
+  cashBalance Float   @default(0.0)
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String  @unique
+}
+
+model Card {
+  id          String  @id @default(uuid())
+  cardNumber  String
+  cardName    String
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model Product {
+  id          String  @id @default(uuid())
+  name        String
+  price       Float
+  users       User[]  @relation("BasketItems")
+}
+
+model Action {
+  id          String    @id @default(uuid())
+  type        ActionType
+  amount      Float
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+}
