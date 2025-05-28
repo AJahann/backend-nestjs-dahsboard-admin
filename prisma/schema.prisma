@@ -60,3 +60,11 @@ model Action {
   user        User      @relation(fields: [userId], references: [id])
   userId      String
 }
+
+model GoldPrice {
+  id        String   @id @default(uuid())
+  buyPrice  Float    
+  sellPrice Float    
+  updatedAt DateTime @updatedAt
+  updatedBy String   
+}

@@ -7,6 +7,7 @@ import { DepositModule } from './wallet/deposit/deposit.module';
 import { WithdrawModule } from './wallet/withdraw/withdraw.module';
 import { BuyModule } from './trade/buy/buy.module';
 import { SellModule } from './trade/sell/sell.module';
+import { GoldPriceModule } from './gold-price/gold-price.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SellModule } from './trade/sell/sell.module';
     WithdrawModule,
     BuyModule,
     SellModule,
+    GoldPriceModule,
   ],
   controllers: [],
   providers: [],
