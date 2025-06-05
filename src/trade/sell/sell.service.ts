@@ -3,6 +3,7 @@ import { GoldPriceService } from '../../core/services/gold-price.service';
 import { ActionType } from '@prisma/client';
 import { SellGoldDto } from './dto/sell.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import BigNumber from 'bignumber.js';
 
 @Injectable()
 export class SellService {
@@ -15,21 +16,27 @@ export class SellService {
     const { grams } = sellGoldDto;
 
     const { pricePerGram } = await this.goldPriceService.getCurrentPrice();
-    const totalAmount = grams * pricePerGram;
-    const fee = this.calculateFee(totalAmount);
-    const netAmount = totalAmount - fee;
+
+    const gramsBN = new BigNumber(grams);
+    const pricePerGramBN = new BigNumber(pricePerGram);
+    const totalAmountBN = gramsBN.multipliedBy(pricePerGramBN);
+    const feeBN = 0;
+    const netAmountBN = totalAmountBN.minus(feeBN);
 
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({
         where: { userId },
-        select: { goldAmount: true },
+        select: { goldAmount: true, cashBalance: true },
       });
 
       if (!wallet) {
         throw new NotFoundException('کیف پول یافت نشد');
       }
 
-      if (wallet.goldAmount < grams) {
+      const cashBalanceBN = new BigNumber(wallet.cashBalance);
+      const goldAmountBN = new BigNumber(wallet.goldAmount);
+
+      if (goldAmountBN.isLessThan(gramsBN)) {
         throw new BadRequestException('موجودی طلای کافی نیست');
       }
 
@@ -37,8 +44,8 @@ export class SellService {
         tx.wallet.update({
           where: { userId },
           data: {
-            goldAmount: { decrement: grams },
-            cashBalance: { increment: netAmount },
+            cashBalance: Number(cashBalanceBN.plus(netAmountBN).toFixed(0)),
+            goldAmount: Number(goldAmountBN.minus(gramsBN).toFixed(2)),
           },
         }),
       ]);
@@ -46,13 +53,13 @@ export class SellService {
       await tx.action.create({
         data: {
           type: ActionType.TRADE,
-          amount: grams,
+          amount: gramsBN.toNumber(),
           userId,
           metadata: {
             action: 'SELL_GOLD',
-            unitPrice: pricePerGram,
-            totalAmount,
-            fee,
+            unitPrice: pricePerGramBN.toNumber(),
+            totalAmount: totalAmountBN.toNumber(),
+            fee: feeBN,
             newGoldBalance: updatedWallet.goldAmount,
             newCashBalance: updatedWallet.cashBalance,
           },
@@ -62,19 +69,15 @@ export class SellService {
       return {
         success: true,
         transactionId: `TRX-${Date.now()}`,
-        grams,
-        unitPrice: pricePerGram,
-        totalAmount,
-        fee,
+        grams: gramsBN.toNumber(),
+        unitPrice: pricePerGramBN.toNumber(),
+        totalAmount: totalAmountBN.toNumber(),
+        fee: feeBN,
         newBalance: {
           gold: updatedWallet.goldAmount,
           cash: updatedWallet.cashBalance,
         },
       };
     });
-  }
-
-  private calculateFee(amount: number): number {
-    return Math.max(1000, amount * 0.003);
   }
 }

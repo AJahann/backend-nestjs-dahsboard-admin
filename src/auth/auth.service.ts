@@ -1,15 +1,22 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignUpDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { CardsService } from 'src/account/cards/cards.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private cardsService: CardsService,
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -77,15 +84,26 @@ export class AuthService {
   }
 
   async getUserProfile(userId: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         phone: true,
+        name: true,
         wallet: true,
-        cards: true,
         basket: true,
       },
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const cards = await this.cardsService.getCards(userId);
+
+    return {
+      ...user,
+      cards,
+    };
   }
 }

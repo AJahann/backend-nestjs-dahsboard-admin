@@ -7,6 +7,15 @@ export class DepositService {
   constructor(private prisma: PrismaService) {}
 
   async processDeposit(userId: string, amount: number, cardId: string) {
+    const currentUserCashBalance = await this.prisma.wallet.findUnique({
+      where: { userId },
+      select: { cashBalance: true },
+    });
+
+    if (currentUserCashBalance && currentUserCashBalance.cashBalance > 200_000_000) {
+      throw new BadRequestException('حداکثر موجودی نقدی ۲۰۰,۰۰۰,۰۰۰ تومان است');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const card = await tx.card.findUnique({
         where: { id: cardId, userId },

@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { GoldPriceService } from 'src/core/services/gold-price.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import BigNumber from 'bignumber.js';
 
 @Injectable()
 export class BuyService {
@@ -12,16 +13,26 @@ export class BuyService {
   async buyGold(userId: string, grams: number) {
     const { pricePerGram } = await this.goldPriceService.getCurrentPrice();
 
-    const totalAmount = grams * pricePerGram;
-    const fee = this.calculateFee(totalAmount);
+    const gramsBN = new BigNumber(grams);
+    const pricePerGramBN = new BigNumber(pricePerGram);
+    const totalAmountBN = gramsBN.multipliedBy(pricePerGramBN);
+    const feeBN = 0;
+    const totalCostBN = totalAmountBN.plus(feeBN);
 
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({
         where: { userId },
-        select: { cashBalance: true },
+        select: { cashBalance: true, goldAmount: true },
       });
 
-      if (wallet?.cashBalance ? wallet.cashBalance < totalAmount + fee : false) {
+      if (!wallet) {
+        throw new BadRequestException('کیف پول یافت نشد');
+      }
+
+      const cashBalanceBN = new BigNumber(wallet.cashBalance);
+      const goldAmountBN = new BigNumber(wallet.goldAmount);
+
+      if (cashBalanceBN.isLessThan(totalCostBN)) {
         throw new BadRequestException('موجودی نقدی کافی نیست');
       }
 
@@ -29,8 +40,8 @@ export class BuyService {
         tx.wallet.update({
           where: { userId },
           data: {
-            cashBalance: { decrement: totalAmount + fee },
-            goldAmount: { increment: grams },
+            cashBalance: Number(cashBalanceBN.minus(totalCostBN).toFixed(0)),
+            goldAmount: Number(goldAmountBN.plus(gramsBN).toFixed(2)),
           },
         }),
       ]);
@@ -38,19 +49,15 @@ export class BuyService {
       return {
         success: true,
         transactionId: `TRX-${Date.now()}`,
-        grams,
-        unitPrice: pricePerGram,
-        totalAmount,
-        fee,
+        grams: gramsBN.toNumber(),
+        unitPrice: pricePerGramBN.toNumber(),
+        totalAmount: totalAmountBN.toNumber(),
+        fee: feeBN,
         newBalance: {
           gold: updatedWallet.goldAmount,
           cash: updatedWallet.cashBalance,
         },
       };
     });
-  }
-
-  private calculateFee(amount: number): number {
-    return Math.max(1000, amount * 0.005);
   }
 }
