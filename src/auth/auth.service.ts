@@ -91,7 +91,7 @@ export class AuthService {
         phone: true,
         name: true,
         wallet: true,
-        basket: true,
+        basketItems: true,
       },
     });
 

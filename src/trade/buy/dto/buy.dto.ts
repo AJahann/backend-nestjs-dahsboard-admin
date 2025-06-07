@@ -4,6 +4,6 @@ import { Transform } from 'class-transformer';
 export class BuyGoldDto {
   @Transform(({ value }) => Number(value))
   @IsNumber()
-  @Min(0.1, { message: 'حداقل خرید ۰.۱ گرم است' })
-  grams: number;
+  @Min(100_000, { message: 'حداقل خرید ۱۰۰,۰۰۰ تومان است' })
+  amount: number;
 }

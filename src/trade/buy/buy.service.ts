@@ -10,14 +10,15 @@ export class BuyService {
     private goldPriceService: GoldPriceService,
   ) {}
 
-  async buyGold(userId: string, grams: number) {
+  async buyGold(userId: string, amount: number) {
     const { pricePerGram } = await this.goldPriceService.getCurrentPrice();
 
-    const gramsBN = new BigNumber(grams);
+    const amountBN = new BigNumber(amount);
     const pricePerGramBN = new BigNumber(pricePerGram);
-    const totalAmountBN = gramsBN.multipliedBy(pricePerGramBN);
-    const feeBN = 0;
-    const totalCostBN = totalAmountBN.plus(feeBN);
+
+    const feeBN = 10_000;
+    const totalCostBN = amountBN.minus(feeBN);
+    const gramsBN = totalCostBN.dividedBy(pricePerGramBN);
 
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({
@@ -32,7 +33,7 @@ export class BuyService {
       const cashBalanceBN = new BigNumber(wallet.cashBalance);
       const goldAmountBN = new BigNumber(wallet.goldAmount);
 
-      if (cashBalanceBN.isLessThan(totalCostBN)) {
+      if (cashBalanceBN.isLessThan(amountBN)) {
         throw new BadRequestException('موجودی نقدی کافی نیست');
       }
 
@@ -40,7 +41,7 @@ export class BuyService {
         tx.wallet.update({
           where: { userId },
           data: {
-            cashBalance: Number(cashBalanceBN.minus(totalCostBN).toFixed(0)),
+            cashBalance: Number(cashBalanceBN.minus(amount).toFixed(0)),
             goldAmount: Number(goldAmountBN.plus(gramsBN).toFixed(2)),
           },
         }),
@@ -50,8 +51,8 @@ export class BuyService {
         success: true,
         transactionId: `TRX-${Date.now()}`,
         grams: gramsBN.toNumber(),
-        unitPrice: pricePerGramBN.toNumber(),
-        totalAmount: totalAmountBN.toNumber(),
+        amount: amountBN.toNumber(),
+        totalCost: totalCostBN.toNumber(),
         fee: feeBN,
         newBalance: {
           gold: updatedWallet.goldAmount,

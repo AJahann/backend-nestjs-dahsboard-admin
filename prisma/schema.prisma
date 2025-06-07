@@ -15,16 +15,16 @@ enum ActionType {
 }
 
 model User {
-  id          String    @id @default(uuid())
-  phone       String    @unique
+  id          String       @id @default(uuid())
+  phone       String       @unique
   password    String
   name        String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   
   wallet      Wallet?
   cards       Card[]
-  basket      Product[] @relation("BasketItems")
+  basketItems BasketItem[] 
   actions     Action[]
 }
 
@@ -44,11 +44,31 @@ model Card {
   userId      String
 }
 
+model BasketItem {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId])
+}
+
 model Product {
-  id          String  @id @default(uuid())
+  id          String        @id @default(uuid())
   name        String
-  price       Float
-  users       User[]  @relation("BasketItems")
+  imgData     Bytes?   
+  imgMimeType String?  
+  wages       String
+  brand       String
+  type        String
+  gram        Float
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  basketItems BasketItem[]   
 }
 
 model Action {

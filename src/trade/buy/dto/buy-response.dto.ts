@@ -2,7 +2,8 @@ export class BuyGoldResponseDto {
   success: boolean;
   transactionId: string;
   grams: number;
-  totalAmount: number;
+  amount: number;
+  totalCost: number;
   fee: number;
   newBalance: {
     gold: number;

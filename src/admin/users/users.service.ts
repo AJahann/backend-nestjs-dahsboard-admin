@@ -27,7 +27,6 @@ export class UsersService {
       include: {
         wallet: true,
         cards: true,
-        basket: true,
         actions: true,
       },
     });
@@ -39,7 +38,6 @@ export class UsersService {
       include: {
         wallet: true,
         cards: true,
-        basket: true,
         actions: true,
       },
     });

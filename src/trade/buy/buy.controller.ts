@@ -12,6 +12,6 @@ export class BuyController {
   @Post()
   @HttpCode(200)
   async buyGold(@Req() req, @Body() buyGoldDto: BuyGoldDto): Promise<BuyGoldResponseDto> {
-    return this.buyService.buyGold(req.user.sub, buyGoldDto.grams);
+    return this.buyService.buyGold(req.user.sub, buyGoldDto.amount);
   }
 }
