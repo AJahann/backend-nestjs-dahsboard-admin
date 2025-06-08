@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ActionType {
+  PAYMENT
+  WITHDRAW
+  TRADE
+  ORDER
+}
+
+model User {
+  id          String       @id @default(uuid())
+  phone       String       @unique
+  password    String
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  wallet      Wallet?
+  cards       Card[]
+  basketItems BasketItem[] @relation("UserToBasketItems")
+  actions     Action[]
+}
+
+model Wallet {
+  id          String  @id @default(uuid())
+  goldAmount  Float   @default(0.0)
+  cashBalance Float   @default(0.0)
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String  @unique
+}
+
+model Card {
+  id          String  @id @default(uuid())
+  cardNumber  String
+  cardName    String
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model BasketItem {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  user      User     @relation("UserToBasketItems", fields: [userId], references: [id])
+  userId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId])
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  imgData     Bytes?   
+  imgMimeType String?  
+  wages       String
+  brand       String
+  type        String
+  gram        Float
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  basketItems BasketItem[]   
+}
+
+model Action {
+  id          String    @id @default(uuid())
+  type        ActionType
+  amount      Float
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model GoldPrice {
+  id        String   @id @default(uuid())
+  buyPrice  Float    
+  sellPrice Float    
+  updatedAt DateTime @updatedAt
+  updatedBy String   
+}
