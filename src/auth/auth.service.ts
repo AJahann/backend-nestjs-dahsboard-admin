@@ -29,7 +29,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this phone already exists');
+      throw new ConflictException('این شماره موبایل قبلا ثبت شده است');
     }
 
     const hashedPassword = await this.hashPassword(signUpDto.password);
@@ -64,12 +64,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('نام کاربری یا رمز عبور اشتباه است');
     }
 
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('نام کاربری یا رمز عبور اشتباه است');
     }
 
     const payload = { sub: user.id, phone: user.phone };
@@ -86,24 +86,46 @@ export class AuthService {
   async getUserProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        phone: true,
-        name: true,
+      include: {
         wallet: true,
-        basketItems: true,
+        basketItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                wages: true,
+                gram: true,
+                type: true,
+                brand: true,
+              },
+            },
+          },
+        },
       },
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('کاربر یافت نشد');
     }
 
     const cards = await this.cardsService.getCards(userId);
 
+    const formattedBasket = user.basketItems.map((item) => ({
+      id: item.productId,
+      name: item.product.name,
+      wages: item.product.wages,
+      gram: item.product.gram,
+      count: item.quantity,
+    }));
+
     return {
-      ...user,
+      id: user.id,
+      phone: user.phone,
+      name: user.name,
+      wallet: user.wallet,
       cards,
+      basket: formattedBasket,
     };
   }
 }

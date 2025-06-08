@@ -89,7 +89,12 @@ export class BasketService {
   async removeFromBasket(userId: string, productId: string): Promise<BasketItemDto> {
     return this.prisma.$transaction(async (tx) => {
       const basketItem = await tx.basketItem.findUnique({
-        where: { productId_userId: { productId, userId } },
+        where: {
+          productId_userId: {
+            productId,
+            userId,
+          },
+        },
         include: { product: true },
       });
 
@@ -109,23 +114,13 @@ export class BasketService {
         new BigNumber(wallet.goldAmount).plus(returnAmountBN).toFixed(2),
       );
 
-      await tx.wallet.update({
-        where: { userId },
-        data: { goldAmount: newGoldAmount },
-      });
-
       await tx.basketItem.delete({
         where: { productId_userId: { productId, userId } },
       });
 
-      // به‌روزرسانی رابطه User با BasketItem
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          basketItems: {
-            disconnect: { productId_userId: { productId, userId } },
-          },
-        },
+      await tx.wallet.update({
+        where: { userId },
+        data: { goldAmount: newGoldAmount },
       });
 
       await tx.action.create({
@@ -153,17 +148,12 @@ export class BasketService {
 
   async clearBasket(userId: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        include: { basketItems: true },
-      });
-
-      if (!user?.basketItems || user.basketItems.length === 0) return;
-
       const basketItems = await tx.basketItem.findMany({
         where: { userId },
         include: { product: true },
       });
+
+      if (basketItems.length === 0) return;
 
       const totalReturnBN = basketItems.reduce((sum, item) => {
         const itemGramBN = new BigNumber(item.product.gram);
@@ -177,27 +167,12 @@ export class BasketService {
 
       const newGoldAmount = Number(new BigNumber(wallet.goldAmount).plus(totalReturnBN).toFixed(2));
 
+      await tx.basketItem.deleteMany({ where: { userId } });
+
       await tx.wallet.update({
         where: { userId },
         data: { goldAmount: newGoldAmount },
       });
-
-      // قطع تمام ارتباطات BasketItem از User
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          basketItems: {
-            disconnect: user.basketItems.map((item) => ({
-              productId_userId: {
-                productId: item.productId,
-                userId: item.userId,
-              },
-            })),
-          },
-        },
-      });
-
-      await tx.basketItem.deleteMany({ where: { userId } });
 
       await tx.action.create({
         data: {

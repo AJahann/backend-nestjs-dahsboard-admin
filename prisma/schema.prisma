@@ -24,7 +24,7 @@ model User {
   
   wallet      Wallet?
   cards       Card[]
-  basketItems BasketItem[] 
+  basketItems BasketItem[] @relation("UserToBasketItems")
   actions     Action[]
 }
 
@@ -48,7 +48,7 @@ model BasketItem {
   id        String   @id @default(uuid())
   product   Product  @relation(fields: [productId], references: [id])
   productId String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation("UserToBasketItems", fields: [userId], references: [id])
   userId    String
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
