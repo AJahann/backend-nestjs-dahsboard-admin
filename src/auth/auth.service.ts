@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -10,6 +11,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SignUpDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { CardsService } from 'src/account/cards/cards.service';
+import { RegisterAdminDto } from './dto/register-admin.dto';
+import { LoginAdminDto } from './dto/login-admin.dto';
 
 @Injectable()
 export class AuthService {
@@ -126,6 +129,63 @@ export class AuthService {
       wallet: user.wallet,
       cards,
       basket: formattedBasket,
+    };
+  }
+
+  async registerAdmin(dto: RegisterAdminDto) {
+    const superAdminExists = await this.prisma.admin.findFirst({
+      where: { role: 'SUPER_ADMIN' },
+    });
+
+    //todo => delete this in production
+    if (superAdminExists) {
+      await this.prisma.admin.delete({
+        where: { id: superAdminExists.id },
+      });
+    }
+
+    // if (superAdminExists && dto.role === 'SUPER_ADMIN') {
+    //   throw new ForbiddenException('Only one super admin allowed');
+    // }
+
+    const admin = await this.prisma.admin.create({
+      data: {
+        name: dto.name,
+        lastName: dto.lastName,
+        email: dto.email,
+        password: await this.hashPassword(dto.password),
+        role: 'SUPER_ADMIN',
+      },
+    });
+
+    if (admin) {
+      const payload = { sub: admin.id, email: admin.email };
+      return {
+        access_token: this.jwtService.sign(payload),
+      };
+    }
+  }
+
+  async adminLogin(dto: LoginAdminDto) {
+    const admin = await this.prisma.admin.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!admin) {
+      throw new UnauthorizedException('you know.., email or password is not correct.');
+    }
+
+    if (!admin.isActive) {
+      throw new ForbiddenException('Account deactivated');
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, admin.password);
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+
+    const payload = { sub: admin.id, email: admin.email };
+
+    return {
+      access_token: this.jwtService.sign(payload),
     };
   }
 }

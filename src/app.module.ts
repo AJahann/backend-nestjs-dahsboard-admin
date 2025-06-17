@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { UsersModule } from './admin/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { CardsModule } from './account/cards/cards.module';
@@ -12,10 +11,10 @@ import { ProductsModule as AdminProductsModule } from './admin/products/products
 import { ProductsModule } from './products/products.module';
 import { BasketModule } from './basket/basket.module';
 import { OrdersModule } from './orders/orders.module';
+import { AdminModule } from './admin/admin/admin.module';
 
 @Module({
   imports: [
-    UsersModule,
     PrismaModule,
     AuthModule,
     CardsModule,
@@ -28,6 +27,7 @@ import { OrdersModule } from './orders/orders.module';
     AdminProductsModule,
     BasketModule,
     OrdersModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [],

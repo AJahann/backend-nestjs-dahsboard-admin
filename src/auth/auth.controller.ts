@@ -4,6 +4,9 @@ import { SignUpDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { SuperAdminGuard } from './guards/super-admin.guard';
+import { RegisterAdminDto } from './dto/register-admin.dto';
+import { LoginAdminDto } from './dto/login-admin.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -40,5 +43,16 @@ export class AuthController {
   async getProfile(@Req() req) {
     const userId = req.user.sub;
     return this.authService.getUserProfile(userId);
+  }
+
+  @Post('admin/register')
+  @UseGuards(SuperAdminGuard)
+  async registerAdmin(@Body() dto: RegisterAdminDto) {
+    return this.authService.registerAdmin(dto);
+  }
+
+  @Post('admin/login')
+  async adminLogin(@Body() dto: LoginAdminDto) {
+    return this.authService.adminLogin(dto);
   }
 }

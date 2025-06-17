@@ -88,3 +88,18 @@ model GoldPrice {
   updatedAt DateTime @updatedAt
   updatedBy String   
 }
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  lastName  String
+  role      Role     @default(SUPER_ADMIN)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+}
