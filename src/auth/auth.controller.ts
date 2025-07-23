@@ -4,7 +4,6 @@ import { SignUpDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { SuperAdminGuard } from './guards/super-admin.guard';
 import { RegisterAdminDto } from './dto/register-admin.dto';
 import { LoginAdminDto } from './dto/login-admin.dto';
 
@@ -46,7 +45,6 @@ export class AuthController {
   }
 
   @Post('admin/register')
-  @UseGuards(SuperAdminGuard)
   async registerAdmin(@Body() dto: RegisterAdminDto) {
     return this.authService.registerAdmin(dto);
   }
