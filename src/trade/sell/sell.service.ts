@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { GoldPriceService } from '../../core/services/gold-price.service';
 import { ActionType } from '@prisma/client';
 import { SellGoldDto } from './dto/sell.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import BigNumber from 'bignumber.js';
+import { GoldPriceService } from 'src/gold-price/gold-price.service';
 
 @Injectable()
 export class SellService {
@@ -15,7 +15,7 @@ export class SellService {
   async sellGold(userId: string, sellGoldDto: SellGoldDto) {
     const { grams } = sellGoldDto;
 
-    const { pricePerGram } = await this.goldPriceService.getCurrentPrice();
+    const { sellPrice: pricePerGram } = await this.goldPriceService.getLatestPrices();
 
     const gramsBN = new BigNumber(grams);
     const pricePerGramBN = new BigNumber(pricePerGram);
@@ -48,23 +48,22 @@ export class SellService {
             goldAmount: Number(goldAmountBN.minus(gramsBN).toFixed(2)),
           },
         }),
-      ]);
-
-      await tx.action.create({
-        data: {
-          type: ActionType.TRADE,
-          amount: gramsBN.toNumber(),
-          userId,
-          metadata: {
-            action: 'SELL_GOLD',
-            unitPrice: pricePerGramBN.toNumber(),
-            totalAmount: totalAmountBN.toNumber(),
-            fee: feeBN,
-            newGoldBalance: updatedWallet.goldAmount,
-            newCashBalance: updatedWallet.cashBalance,
+        tx.action.create({
+          data: {
+            type: ActionType.TRADE,
+            amount: gramsBN.toNumber(),
+            userId,
+            metadata: {
+              action: 'SELL_GOLD',
+              unitPrice: pricePerGramBN.toNumber(),
+              totalAmount: totalAmountBN.toNumber(),
+              fee: feeBN,
+              newGoldBalance: Number(goldAmountBN.minus(gramsBN).toFixed(2)),
+              newCashBalance: Number(cashBalanceBN.plus(netAmountBN).toFixed(0)),
+            },
           },
-        },
-      });
+        }),
+      ]);
 
       return {
         success: true,

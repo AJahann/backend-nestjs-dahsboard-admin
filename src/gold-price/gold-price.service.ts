@@ -8,10 +8,28 @@ import { GoldPrice } from './entities/gold-price.entity';
 export class GoldPriceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly DEFAULT_PRICES = {
+    buyPrice: 7108957,
+    sellPrice: 6804921,
+  };
+
   async create(createGoldPriceDto: CreateGoldPriceDto): Promise<GoldPrice> {
     return this.prisma.goldPrice.create({
       data: createGoldPriceDto,
     });
+  }
+
+  async initializeDefaultPrices() {
+    const goldPriceCount = await this.prisma.goldPrice.count();
+    if (goldPriceCount === 0) {
+      await this.prisma.goldPrice.create({
+        data: {
+          buyPrice: this.DEFAULT_PRICES.buyPrice,
+          sellPrice: this.DEFAULT_PRICES.sellPrice,
+          updatedBy: 'system-init',
+        },
+      });
+    }
   }
 
   async getLatestPrices(): Promise<{ buyPrice: number; sellPrice: number }> {
@@ -20,12 +38,7 @@ export class GoldPriceService {
       select: { buyPrice: true, sellPrice: true },
     });
 
-    return (
-      latest || {
-        buyPrice: 6460822, // مقدار پیش‌فرض
-        sellPrice: 5701547, // مقدار پیش‌فرض
-      }
-    );
+    return latest ?? this.DEFAULT_PRICES;
   }
 
   async findAll(): Promise<GoldPrice[]> {

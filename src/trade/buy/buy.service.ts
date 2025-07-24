@@ -1,7 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { GoldPriceService } from 'src/core/services/gold-price.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import BigNumber from 'bignumber.js';
+import { GoldPriceService } from 'src/gold-price/gold-price.service';
+import { ActionType } from '@prisma/client';
 
 @Injectable()
 export class BuyService {
@@ -11,7 +12,7 @@ export class BuyService {
   ) {}
 
   async buyGold(userId: string, amount: number) {
-    const { pricePerGram } = await this.goldPriceService.getCurrentPrice();
+    const { buyPrice: pricePerGram } = await this.goldPriceService.getLatestPrices();
 
     const amountBN = new BigNumber(amount);
     const pricePerGramBN = new BigNumber(pricePerGram);
@@ -43,6 +44,21 @@ export class BuyService {
           data: {
             cashBalance: Number(cashBalanceBN.minus(amount).toFixed(0)),
             goldAmount: Number(goldAmountBN.plus(gramsBN).toFixed(2)),
+          },
+        }),
+        tx.action.create({
+          data: {
+            type: ActionType.TRADE,
+            amount: gramsBN.toNumber(),
+            userId,
+            metadata: {
+              action: 'BUY_GOLD',
+              unitPrice: pricePerGramBN.toNumber(),
+              totalAmount: amountBN.toNumber(),
+              fee: feeBN,
+              newGoldBalance: Number(goldAmountBN.plus(gramsBN).toFixed(2)),
+              newCashBalance: Number(cashBalanceBN.minus(amount).toFixed(0)),
+            },
           },
         }),
       ]);

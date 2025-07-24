@@ -13,6 +13,7 @@ import { BasketModule } from './basket/basket.module';
 import { OrdersModule } from './orders/orders.module';
 import { UsersModule } from './admin/users/users.module';
 import { OrdersModule as AdminOrdersModule } from './admin/orders/orders.module';
+import { TransactionsModule } from './admin/transactions/transactions.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { OrdersModule as AdminOrdersModule } from './admin/orders/orders.module'
     AdminOrdersModule,
     OrdersModule,
     UsersModule,
+    TransactionsModule,
   ],
   controllers: [],
   providers: [],
