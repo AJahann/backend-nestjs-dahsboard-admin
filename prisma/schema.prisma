@@ -26,6 +26,7 @@ model User {
   cards       Card[]
   basketItems BasketItem[] @relation("UserToBasketItems")
   actions     Action[]
+  orders      Order[]     
 }
 
 model Wallet {
@@ -68,7 +69,8 @@ model Product {
   gram        Float
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  basketItems BasketItem[]   
+  basketItems BasketItem[] 
+  orderItems  OrderItem[]   
 }
 
 model Action {
@@ -102,4 +104,36 @@ model Admin {
 
 enum Role {
   SUPER_ADMIN
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  items       OrderItem[]
+  status      OrderStatus @default(PENDING)
+  totalPrice  Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  price     Float
+  gram      Float
+  total     Float
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
 }

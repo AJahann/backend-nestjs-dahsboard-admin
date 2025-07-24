@@ -12,6 +12,7 @@ import { ProductsModule } from './products/products.module';
 import { BasketModule } from './basket/basket.module';
 import { OrdersModule } from './orders/orders.module';
 import { UsersModule } from './admin/users/users.module';
+import { OrdersModule as AdminOrdersModule } from './admin/orders/orders.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from './admin/users/users.module';
     ProductsModule,
     AdminProductsModule,
     BasketModule,
+    AdminOrdersModule,
     OrdersModule,
     UsersModule,
   ],
