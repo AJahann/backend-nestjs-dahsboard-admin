@@ -1,52 +1,30 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Query,
-  UseInterceptors,
-  UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-} from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, Delete, Param, Put } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { Multer } from 'multer';
+import { SuperAdminJwtGuard } from 'src/auth/guards/super-admin.guard';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('admin/products')
+@UseGuards(SuperAdminJwtGuard)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+  @Get()
+  async getProducts(@Query('limit') limit: number = 15) {
+    return this.productsService.getAllProducts(Number(limit));
+  }
 
   @Post()
   async createProduct(@Body() createProductDto: CreateProductDto) {
     return this.productsService.createProduct(createProductDto);
   }
 
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('image'))
-  async createProductWithFile(
-    @Body() createProductDto: CreateProductDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: 'image/*' }),
-        ],
-        fileIsRequired: false,
-      }),
-    )
-    file?: Multer.File,
-  ) {
-    if (file) {
-      createProductDto.imgBase64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-    }
-    return this.productsService.createProduct(createProductDto);
+  @Delete(':id')
+  async deleteProduct(@Param('id') id: string) {
+    return this.productsService.deleteProduct(id);
   }
 
-  @Get()
-  async getProducts(@Query('limit') limit: number = 15) {
-    return this.productsService.getAllProducts(Number(limit));
+  @Put(':id')
+  async updateProduct(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    return this.productsService.updateProduct(id, updateProductDto);
   }
 }

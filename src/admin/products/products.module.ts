@@ -4,9 +4,10 @@ import { ProductsController } from './products.controller';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  imports: [PrismaModule, JwtModule.register({})],
+  imports: [PrismaModule, JwtModule.register({}), AuthModule],
   controllers: [ProductsController],
   providers: [ProductsService, PrismaService],
 })

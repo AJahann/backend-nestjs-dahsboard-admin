@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Buffer } from 'buffer';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -51,6 +52,34 @@ export class ProductsService {
           ? `data:${product.imgMimeType};base64,${Buffer.from(product.imgData).toString('base64')}`
           : null,
       };
+    });
+  }
+
+  async deleteProduct(id: string) {
+    return this.prisma.$transaction(async (prisma) => {
+      await prisma.orderItem.deleteMany({ where: { productId: id } });
+
+      try {
+        await prisma.product.delete({ where: { id } });
+
+        return {
+          success: true,
+          message: 'product delete successfully',
+        };
+      } catch (error) {
+        return error;
+      }
+    });
+  }
+
+  async updateProduct(id: string, updateProductDto: UpdateProductDto) {
+    const newProductData = Object.fromEntries(
+      Object.entries(updateProductDto).filter(([, value]) => value !== undefined),
+    );
+
+    return this.prisma.product.update({
+      where: { id },
+      data: newProductData,
     });
   }
 }
