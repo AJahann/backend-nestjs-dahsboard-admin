@@ -1,9 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderWithItems } from './interfaces/order.interface';
-import { take } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
@@ -73,6 +71,14 @@ export class OrdersService {
     orderId: string,
     updateOrderDto: UpdateOrderDto,
   ): Promise<OrderWithItems> {
+    const isOrderExist = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!isOrderExist) {
+      throw new BadRequestException('Order not found.');
+    }
+
     return this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -94,8 +100,8 @@ export class OrdersService {
     }) as Promise<OrderWithItems>;
   }
 
-  async getOrderById(orderId: string): Promise<OrderWithItems | null> {
-    return this.prisma.order.findUnique({
+  async getOrderById(orderId: string) {
+    const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
         items: {
@@ -110,6 +116,12 @@ export class OrdersService {
           },
         },
       },
-    }) as Promise<OrderWithItems | null>;
+    });
+
+    if (order === null) {
+      throw new BadRequestException('Order not found.');
+    }
+
+    return order as OrderWithItems;
   }
 }
