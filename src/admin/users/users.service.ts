@@ -112,21 +112,19 @@ export class UsersService {
   }
 
   async remove(id: string) {
-    // First check if user exists
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    // Use a transaction to ensure all deletions succeed or fail together
     return this.prisma.$transaction(async (prisma) => {
-      // Delete related records in the correct order
       await prisma.basketItem.deleteMany({ where: { userId: id } });
       await prisma.action.deleteMany({ where: { userId: id } });
       await prisma.card.deleteMany({ where: { userId: id } });
       await prisma.wallet.deleteMany({ where: { userId: id } });
+      await prisma.orderItem.deleteMany({ where: { order: { userId: id } } });
+      await prisma.order.deleteMany({ where: { userId: id } });
 
-      // Finally delete the user
       try {
         await prisma.user.delete({ where: { id } });
 

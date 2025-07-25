@@ -1,4 +1,4 @@
-import { IsString, Length } from 'class-validator';
+import { IsString, Length, Matches } from 'class-validator';
 
 export class SignUpDto {
   @IsString()
@@ -7,6 +7,9 @@ export class SignUpDto {
 
   @IsString()
   @Length(11)
+  @Matches(/^09[0-9]{9}$/, {
+    message: 'Phone number must start with 09 and have 11 digits',
+  })
   phone: string;
 
   @IsString()

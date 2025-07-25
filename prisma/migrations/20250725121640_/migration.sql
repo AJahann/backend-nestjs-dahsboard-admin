@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "GoldPrice" ALTER COLUMN "buyPrice" DROP DEFAULT,
+ALTER COLUMN "sellPrice" DROP DEFAULT;
