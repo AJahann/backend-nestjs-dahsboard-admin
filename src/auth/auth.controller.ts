@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterAdminDto } from './dto/register-admin.dto';
 import { LoginAdminDto } from './dto/login-admin.dto';
+import { SuperAdminJwtGuard } from './guards/super-admin.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -52,5 +53,12 @@ export class AuthController {
   @Post('admin/login')
   async adminLogin(@Body() dto: LoginAdminDto) {
     return this.authService.adminLogin(dto);
+  }
+
+  @Get('admin/me')
+  @UseGuards(SuperAdminJwtGuard)
+  async getAdminProfile(@Req() req) {
+    const adminId = req.user.sub;
+    return this.authService.getAdminProfile(adminId);
   }
 }

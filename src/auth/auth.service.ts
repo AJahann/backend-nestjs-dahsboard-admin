@@ -137,16 +137,9 @@ export class AuthService {
       where: { role: 'SUPER_ADMIN' },
     });
 
-    //todo => delete this in production
-    if (superAdminExists) {
-      await this.prisma.admin.delete({
-        where: { id: superAdminExists.id },
-      });
+    if (superAdminExists && dto.role === 'SUPER_ADMIN') {
+      throw new ForbiddenException('only one super admin is allowed.');
     }
-
-    // if (superAdminExists && dto.role === 'SUPER_ADMIN') {
-    //   throw new ForbiddenException('Only one super admin allowed');
-    // }
 
     const admin = await this.prisma.admin.create({
       data: {
@@ -180,12 +173,30 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, admin.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid password | email');
 
     const payload = { sub: admin.id, email: admin.email };
 
     return {
       access_token: this.jwtService.sign(payload),
+    };
+  }
+
+  async getAdminProfile(adminId: number) {
+    const admin = await this.prisma.admin.findUnique({
+      where: { id: adminId },
+      omit: { password: true },
+    });
+
+    if (!admin) {
+      throw new NotFoundException('Admin not found.');
+    }
+
+    return {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      lastName: admin.lastName,
     };
   }
 }
