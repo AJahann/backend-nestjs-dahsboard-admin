@@ -5,10 +5,14 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { UserPaginatedResponse } from './interfaces/user-paginated.interface';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { CardsService } from 'src/account/cards/cards.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cardsService: CardsService,
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const existingUser = await this.prisma.user.findUnique({
@@ -44,8 +48,8 @@ export class UsersService {
         take: limit,
         include: {
           wallet: true,
-          cards: true,
           actions: true,
+          cards: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -54,10 +58,26 @@ export class UsersService {
       this.prisma.user.count(),
     ]);
 
+    const usersWithCards = await Promise.all(
+      users.map(async (user) => {
+        const cards = user.cards.map((card) => ({
+          ...card,
+          cardNumber: this.cardsService.decryptCardData(card.cardNumber),
+        }));
+
+        return {
+          ...user,
+          cards,
+        };
+      }),
+    );
+
+    const formattedUsers = usersWithCards.map((user) => new UserResponseDto(user));
+
     const totalPages = Math.ceil(total / limit);
 
     return {
-      users: users.map((user) => new UserResponseDto(user)),
+      users: formattedUsers,
       total,
       page,
       limit,
@@ -95,6 +115,7 @@ export class UsersService {
 
     const newData = {
       ...(updateUserDto.name && { name: updateUserDto?.name }),
+      ...(updateUserDto.phone && { phone: updateUserDto?.phone }),
       ...(updateUserDto?.password && { password: await bcrypt.hash(updateUserDto.password, 10) }),
     };
 

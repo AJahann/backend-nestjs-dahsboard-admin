@@ -65,7 +65,7 @@ export class CardsService {
     return encrypted;
   }
 
-  private decryptCardData(encryptedData: string): string {
+  decryptCardData(encryptedData: string): string {
     if (!encryptedData) {
       throw new InternalServerErrorException('Encrypted data cannot be empty');
     }
