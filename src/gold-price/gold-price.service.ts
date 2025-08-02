@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGoldPriceDto } from './dto/create-gold-price.dto';
-import { UpdateGoldPriceDto } from './dto/update-gold-price.dto';
 import { GoldPrice } from './entities/gold-price.entity';
 
 @Injectable()
@@ -13,9 +12,19 @@ export class GoldPriceService {
     sellPrice: 6804921,
   };
 
-  async create(createGoldPriceDto: CreateGoldPriceDto): Promise<GoldPrice> {
+  async create(adminId: number, createGoldPriceDto: CreateGoldPriceDto): Promise<GoldPrice> {
+    const admin = await this.prisma.admin.findUnique({ where: { id: adminId } });
+
+    if (!admin) {
+      throw new NotFoundException('Admin not found.');
+    }
+
     return this.prisma.goldPrice.create({
-      data: createGoldPriceDto,
+      data: {
+        buyPrice: createGoldPriceDto.buyPrice,
+        sellPrice: createGoldPriceDto.sellPrice,
+        updatedBy: `${admin.name} ${admin.lastName}`,
+      },
     });
   }
 
@@ -41,34 +50,10 @@ export class GoldPriceService {
     return latest ?? this.DEFAULT_PRICES;
   }
 
-  async findAll(): Promise<GoldPrice[]> {
-    return this.prisma.goldPrice.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
-  }
-
-  async findOne(id: string): Promise<GoldPrice | null> {
-    return this.prisma.goldPrice.findUnique({ where: { id } });
-  }
-
-  async update(id: string, updateGoldPriceDto: UpdateGoldPriceDto): Promise<GoldPrice> {
-    return this.prisma.goldPrice.update({
-      where: { id },
-      data: updateGoldPriceDto,
-    });
-  }
-
-  async remove(id: string): Promise<GoldPrice> {
-    return this.prisma.goldPrice.delete({ where: { id } });
-  }
-
-  async getPriceHistory(
-    limit: number = 30,
-  ): Promise<Array<{ buyPrice: number; sellPrice: number; updatedAt: Date }>> {
+  async getPriceHistory(limit: number = 30): Promise<GoldPrice[]> {
     return this.prisma.goldPrice.findMany({
       take: limit,
       orderBy: { updatedAt: 'desc' },
-      select: { buyPrice: true, sellPrice: true, updatedAt: true },
     });
   }
 }
