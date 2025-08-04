@@ -1,73 +1,27 @@
 import { Injectable } from '@nestjs/common';
-import { UpdateGoldPriceDto } from './dto/update-gold-price.dto';
-import { TradeActionType, TransactionFilterDto } from './dto/transaction-filter.dto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { GoldPriceService } from 'src/gold-price/gold-price.service';
+import { TradeTransaction, TransactionFilterDto } from './dto/transaction-filter.dto';
+import { BigNumber } from 'bignumber.js';
 
 @Injectable()
 export class TransactionsService {
-  constructor(
-    private prisma: PrismaService,
-    private goldPriceService: GoldPriceService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async getCurrentGoldPrices() {
-    const latest = await this.prisma.goldPrice.findFirst({
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-      },
+  async getTradeTransactions(filter: TransactionFilterDto): Promise<TradeTransaction[]> {
+    const where: Prisma.ActionWhereInput = this.buildWhereClause(filter);
+
+    const transactions = await this.prisma.action.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: this.getSelectFields(),
     });
 
-    if (latest) {
-      return this.prisma.goldPrice.findUnique({
-        where: { id: latest.id },
-        select: {
-          id: true,
-          buyPrice: true,
-          sellPrice: true,
-          updatedAt: true,
-          updatedBy: true,
-        },
-      });
-    }
-
-    await this.goldPriceService.initializeDefaultPrices();
-
-    return this.prisma.goldPrice.findFirst({
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        buyPrice: true,
-        sellPrice: true,
-        updatedAt: true,
-        updatedBy: true,
-      },
-    });
+    return transactions.map(this.transformTransaction);
   }
 
-  async updateGoldPrices(adminId: number, dto: UpdateGoldPriceDto) {
-    const adminName = await this.prisma.admin.findUnique({
-      where: { id: adminId },
-      select: { name: true },
-    });
-
-    if (adminName == null) {
-      throw new Error('Admin not found');
-    }
-
-    return this.prisma.goldPrice.create({
-      data: {
-        buyPrice: dto.buyPrice,
-        sellPrice: dto.sellPrice,
-        updatedBy: adminName.name,
-      },
-    });
-  }
-
-  async getTradeTransactions(filter: TransactionFilterDto) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+  private buildWhereClause(filter: TransactionFilterDto): Prisma.ActionWhereInput {
+    const where: Prisma.ActionWhereInput = {
       type: 'TRADE',
       metadata: {
         path: ['action'],
@@ -85,36 +39,48 @@ export class TransactionsService {
       if (filter.endDate) where.createdAt.lte = new Date(filter.endDate);
     }
 
-    if (filter.tradeType && filter.tradeType !== TradeActionType.ALL_TRADES) {
-      where.metadata.path = ['action'];
-      where.metadata.equals = filter.tradeType;
+    if (filter.tradeType && filter.tradeType !== 'ALL_TRADES') {
+      where.metadata = {
+        path: ['action'],
+        equals: filter.tradeType,
+      };
     }
 
-    return this.prisma.action.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
-      },
-    });
+    return where;
   }
 
-  async getPriceHistory() {
-    return this.prisma.goldPrice.findMany({
-      orderBy: { updatedAt: 'desc' },
-      take: 30,
-      select: {
-        buyPrice: true,
-        sellPrice: true,
-        updatedAt: true,
-        updatedBy: true,
+  private getSelectFields(): Prisma.ActionSelect {
+    return {
+      id: true,
+      amount: true,
+      createdAt: true,
+      metadata: true,
+      user: {
+        select: {
+          id: true,
+          phone: true,
+        },
       },
-    });
+    };
+  }
+
+  private transformTransaction(action: {
+    id: string;
+    amount: number;
+    createdAt: Date;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata: any;
+    user: { id: string; phone: string };
+  }): TradeTransaction {
+    return {
+      id: action.id,
+      createdAt: action.createdAt,
+      action: action.metadata?.action || 'BUY',
+      goldAmount: parseFloat(BigNumber(action.amount).toFixed(2)),
+      user: {
+        id: action.user.id,
+        phone: action.user.phone,
+      },
+    };
   }
 }

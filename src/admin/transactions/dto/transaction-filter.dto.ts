@@ -6,6 +6,8 @@ export enum TradeActionType {
   ALL_TRADES = 'ALL_TRADES',
 }
 
+type TradeAction = 'BUY_GOLD' | 'SELL_GOLD';
+
 export class TransactionFilterDto {
   @IsOptional()
   @IsString()
@@ -23,3 +25,16 @@ export class TransactionFilterDto {
   @IsEnum(TradeActionType)
   tradeType?: TradeActionType;
 }
+
+export interface TradeTransaction {
+  id: string;
+  createdAt: Date;
+  action: TradeAction;
+  goldAmount: number;
+  user: {
+    id: string;
+    phone: string;
+  };
+}
+
+export type TransactionFilter = Partial<TransactionFilterDto>;

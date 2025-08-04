@@ -1,6 +1,5 @@
-import { Controller, Get, Put, Body, Query, UseGuards, Req } from '@nestjs/common';
-import { UpdateGoldPriceDto } from './dto/update-gold-price.dto';
-import { TransactionFilterDto } from './dto/transaction-filter.dto';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { TradeTransaction, TransactionFilterDto } from './dto/transaction-filter.dto';
 import { SuperAdminJwtGuard } from 'src/auth/guards/super-admin.guard';
 import { TransactionsService } from './transactions.service';
 
@@ -9,23 +8,8 @@ import { TransactionsService } from './transactions.service';
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
-  @Get('gold-prices/current')
-  async getCurrentGoldPrices() {
-    return this.transactionsService.getCurrentGoldPrices();
-  }
-
-  @Put('gold-prices')
-  async updateGoldPrices(@Req() req, @Body() dto: UpdateGoldPriceDto) {
-    return this.transactionsService.updateGoldPrices(req.user.sub, dto);
-  }
-
-  @Get('gold-prices/history')
-  async getGoldPriceHistory() {
-    return this.transactionsService.getPriceHistory();
-  }
-
   @Get('trades')
-  async getTradeTransactions(@Query() filter: TransactionFilterDto) {
+  async getTradeTransactions(@Query() filter: TransactionFilterDto): Promise<TradeTransaction[]> {
     return this.transactionsService.getTradeTransactions(filter);
   }
 }
