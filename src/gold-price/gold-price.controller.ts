@@ -7,13 +7,13 @@ import { SuperAdminJwtGuard } from 'src/auth/guards/super-admin.guard';
 
 @ApiTags('Gold Price Management')
 @Controller('gold-price')
-@UseGuards(SuperAdminJwtGuard)
 export class GoldPriceController {
   constructor(private readonly goldPriceService: GoldPriceService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create new gold price entry' })
   @ApiResponse({ status: 201, type: GoldPrice })
+  @UseGuards(SuperAdminJwtGuard)
   create(@Req() req, @Body() createGoldPriceDto: CreateGoldPriceDto) {
     return this.goldPriceService.create(req.user.sub, createGoldPriceDto);
   }
@@ -34,6 +34,7 @@ export class GoldPriceController {
     status: 200,
     description: 'Returns array of historical prices',
   })
+  @UseGuards(SuperAdminJwtGuard)
   getHistory(@Query('limit') limit: number = 30) {
     return this.goldPriceService.getPriceHistory(Number(limit));
   }

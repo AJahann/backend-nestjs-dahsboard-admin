@@ -73,13 +73,29 @@ export class ProductsService {
   }
 
   async updateProduct(id: string, updateProductDto: UpdateProductDto) {
-    const newProductData = Object.fromEntries(
+    const updateData = Object.fromEntries(
       Object.entries(updateProductDto).filter(([, value]) => value !== undefined),
     );
 
+    if (updateData.imgData) {
+      try {
+        if (updateData.imgData.startsWith('data:')) {
+          const base64Data = updateData.imgData.split(',')[1];
+          if (!base64Data) {
+            throw new BadRequestException('Invalid image format');
+          }
+          updateData.imgData = Buffer.from(base64Data, 'base64');
+        } else {
+          updateData.imgData = Buffer.from(updateData.imgData, 'base64');
+        }
+      } catch {
+        throw new BadRequestException('Invalid image data');
+      }
+    }
+
     return this.prisma.product.update({
       where: { id },
-      data: newProductData,
+      data: updateData,
     });
   }
 }

@@ -27,5 +27,5 @@ export class UpdateProductDto {
 
   @IsString()
   @IsOptional()
-  imgBase64?: string;
+  imgData?: string;
 }
